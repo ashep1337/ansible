@@ -1,5 +1,4 @@
 [all]
-192.168.1.200 ansible_user=trixie1
-192.168.1.199 ansible_user=trixie2
-192.168.1.197 ansible_user=trixie3
-192.168.1.8 ansible_user=root
+192.168.1.200 ansible_user=trixie1 apache_package=apache2 php_package=libapache2-mod-php
+192.168.1.199 ansible_user=trixie2 apache_package=apache2 php_package=libapache2-mod-php
+192.168.1.197 ansible_user=trixie3 apache_package=apache2 php_package=libapache2-mod-php

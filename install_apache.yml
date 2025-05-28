@@ -4,19 +4,10 @@
   become: true
   tasks:
 
-  - name: update repos
-    apt:
+  - name: install apache/php
+    package:
+      name:
+        - "{{ apache_package }}"
+        - "{{ php_package }}"
       update_cache: yes
-    when: ansible_distribution == "Debian"
-
-  - name: install apache2 package
-    apt:
-      name: apache2
-    when: ansible_distribution == "Debian"
-
-
-  - name: add php support for apache
-    apt:
-      name: libapache2-mod-php
       state: latest
-    when: ansible_distribution == "Debian"
