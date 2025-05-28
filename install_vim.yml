@@ -1,0 +1,11 @@
+---
+
+- hosts: all
+  become: true
+  tasks:
+
+  - name: add vim
+    apt:
+      name: vim
+      state: latest
+    when: ansible_distribution == "Debian"
