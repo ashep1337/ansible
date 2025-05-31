@@ -56,15 +56,14 @@
   become: true
   tasks:
 
-  - name: install unzip
-    package:
-      name: unzip
+  - name: Download Terraform using curl to bypass Python HTTPS
+    shell: curl -L -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/1.12.1/terraform_1.12.1_linux_amd64.zip
+    args:
+      creates: /tmp/terraform.zip
 
-  - name: Install Terraform
+  - name: Unzip Terraform binary
     unarchive:
-      src: https://releases.hashicorp.com/terraform/1.12.1/terraform_1.12.1_linux_amd64.zip
-      dest: /usr/local/bin
+      src: /tmp/terraform.zip
+      dest: /usr/local/bin/
       remote_src: yes
       mode: '0755'
-      owner: root
-      group: root
