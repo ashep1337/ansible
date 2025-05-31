@@ -39,7 +39,7 @@
     apt:
       name: samba
       state: latest
-    when: ansible_distribution == "Debian" 
+    when: ansible_distribution == "Debian"
 
 
 - hosts: db_servers
@@ -52,3 +52,19 @@
       state: latest
     when: ansible_distribution == "Debian"
 
+- hosts: workstations
+  become: true
+  tasks:
+
+  - name: install unzip
+    package:
+      name: unzip
+
+  - name: Install Terraform
+    unarchive:
+      src: https://releases.hashicorp.com/terraform/1.12.1/terraform_1.12.1_linux_amd64.zip
+      dest: /usr/local/bin
+      remote_src: yes
+      mode: '0755'
+      owner: root
+      group: root
