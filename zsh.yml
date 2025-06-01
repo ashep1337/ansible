@@ -48,4 +48,5 @@
       printf 'y\ny\ny\n' | ./install
     args:
       chdir: /home/{{ ansible_user }}/.fzf
+      creates: /home/{{ ansible_user }}/.fzf/bin/fzf
     become_user: "{{ ansible_user }}"
