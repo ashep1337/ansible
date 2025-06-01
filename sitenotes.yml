@@ -1,0 +1,67 @@
+- hosts: all
+  become: true                # Run tasks with sudo privileges
+  pre_tasks:                  # Tasks to run before any role or main tasks
+
+  - name: install updates
+    apt:                     # Use apt module for package management (Debian/Ubuntu)
+      upgrade: dist          # Perform a distribution upgrade (upgrade all packages)
+      update_cache: yes      # Update the apt cache before upgrading
+    when: ansible_distribution == "Debian"  # Only run if the OS is Debian
+
+- hosts: web_servers
+  become: true               # Run tasks with sudo privileges
+  tasks:                    # Main tasks for web servers
+
+  - name: install apache/php
+    apt:                    # Use apt to install packages
+      name:                 # List of packages to install
+        - apache2           # Apache HTTP Server package
+        - libapache2-mod-php # PHP module for Apache
+      state: latest         # Ensure packages are at the latest version
+    when: ansible_distribution == "Debian"  # Run only on Debian OS
+
+  - name: copy html for site
+    tags: apache,apache2,httpd # Tags to allow selective task runs
+    copy:                   # Copy a file from control machine to target
+      src: default_site.html  # Source file path on control machine
+      dest: /var/www/html/index.html # Destination path on the target server
+      owner: root           # Set file owner to root
+      group: root           # Set file group to root
+      mode: 0644            # Set file permissions to rw-r--r--
+
+- hosts: file_servers
+  become: true              # Run tasks with sudo privileges
+  tasks:                   # Main tasks for file servers
+
+  - name: install samaba
+    apt:                   # Use apt module to install packages
+      name: samba          # Install Samba package (file sharing)
+      state: latest        # Ensure the package is at the latest version
+    when: ansible_distribution == "Debian"  # Only on Debian OS
+
+- hosts: db_servers
+  become: true             # Run tasks with sudo privileges
+  tasks:                  # Main tasks for database servers
+
+  - name: install mariadb
+    apt:                  # Use apt to install packages
+      name: mariadb-server  # MariaDB database server package
+      state: latest        # Ensure the package is at the latest version
+    when: ansible_distribution == "Debian" # Only on Debian OS
+
+- hosts: workstations
+  become: true             # Run tasks with sudo privileges
+  tasks:                  # Tasks for workstation machines
+
+  - name: Download Terraform using curl to bypass Python HTTPS
+    shell: curl -L -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/1.12.1/terraform_1.12.1_linux_amd64.zip
+                            # Use curl to download Terraform zip to /tmp, -L follows redirects
+    args:
+      creates: /tmp/terraform.zip   # Skip this command if the zip file already exists
+
+  - name: Unzip Terraform binary
+    unarchive:               # Unarchive module to extract compressed files
+      src: /tmp/terraform.zip   # Source zip file to extract
+      dest: /usr/local/bin/     # Destination directory for extraction
+      remote_src: yes           # The src is on the remote machine, not control node
+      mode: '0755'              # Set executable permissions on extracted files
