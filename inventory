@@ -1,11 +1,11 @@
 [web_servers]
-192.168.1.200 ansible_user=trixie1
+192.168.1.200
 
 [db_servers]
-192.168.1.199 ansible_user=trixie2
+192.168.1.199
 
 [file_servers]
-192.168.1.197 ansible_user=trixie3 
+192.168.1.197
 
 [workstations]
-192.168.1.17 ansible_user=ashep
+192.168.1.17 

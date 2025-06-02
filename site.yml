@@ -4,10 +4,10 @@
   become: true
   pre_tasks:
 
-  - name: install updates
+  - name: updating repo caches
     apt:
-      upgrade: dist
       update_cache: yes
+    changed_when: false
     when: ansible_distribution == "Debian"
 
 - hosts: web_servers
