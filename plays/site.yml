@@ -1,21 +1,20 @@
 ---
-# Applies to all hosts
+
 - hosts: all
   become: true
   pre_tasks:
 
-  - name: updating repo caches  # Refreshes APT package list
+  - name: updating repo caches
     apt:
       update_cache: yes
-    changed_when: false         # Avoids marking this task as "changed" each time
-    when: ansible_distribution == "Debian"  # Runs only on Debian-based systems
+    changed_when: false
+    when: ansible_distribution == "Debian"
 
-# Tasks specific to the 'web_servers' group
 - hosts: web_servers
   become: true
   tasks:
 
-  - name: install apache/php  # Installs Apache2 and PHP support
+  - name: install apache/php
     apt:
       name:
         - apache2
@@ -23,28 +22,28 @@
       state: latest
     when: ansible_distribution == "Debian"
 
-  - name: Start apache2  # Ensures Apache is running and enabled on boot
+  - name: Start apache2
     tags: apache,httpd
     service:
       name: apache2
       state: started
       enabled: yes
 
-  - name: change email for admin  # Edits the default Apache site config to set admin email
+  - name: change email for admin
     lineinfile:
       path: /etc/apache2/sites-available/000-default.conf
       regexp: '^ServerAdmin'
       line: ServerAdmin somebody@somewhere.net
-    register: apache2  # Registers a variable to track if the file was modified
+    register: apache2
 
-  - name: restart apache2  # Restarts Apache only if the previous task made changes
+  - name: restart apache2
     tags: apache2
     service:
       name: apache2
       state: restarted
     when: apache2.changed
 
-  - name: copy html for site  # Deploys a default index.html for the site
+  - name: copy html for site
     tags: apache,apache2,httpd
     copy:
       src: default_site.html
@@ -53,39 +52,37 @@
       group: root
       mode: 0644
 
-# Tasks specific to the 'file_servers' group
 - hosts: file_servers
   become: true
   tasks:
 
-  - name: install samaba  # Installs the Samba file sharing service
+  - name: install samaba
     apt:
       name: samba
       state: latest
     when: ansible_distribution == "Debian"
 
-# Tasks specific to the 'db_servers' group
+
 - hosts: db_servers
   become: true
   tasks:
 
-  - name: install mariadb  # Installs MariaDB, a MySQL-compatible database
+  - name: install mariadb
     apt:
       name: mariadb-server
       state: latest
     when: ansible_distribution == "Debian"
 
-# Tasks specific to 'workstations'
 - hosts: workstations
   become: true
   tasks:
 
-  - name: Download Terraform using curl to bypass Python HTTPS  # Downloads Terraform binary manually
+  - name: Download Terraform using curl to bypass Python HTTPS
     shell: curl -L -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/1.12.1/terraform_1.12.1_linux_amd64.zip
     args:
-      creates: /tmp/terraform.zip  # Prevents download if the file already exists
+      creates: /tmp/terraform.zip
 
-  - name: Unzip Terraform binary  # Extracts Terraform to /usr/local/bin
+  - name: Unzip Terraform binary
     unarchive:
       src: /tmp/terraform.zip
       dest: /usr/local/bin/
