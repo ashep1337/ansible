@@ -1,0 +1,60 @@
+---
+
+- name: Install zsh and configure for all users
+  hosts: all
+  become: true
+  vars:
+    zshrc_path: ".zshrc"  # Relative to the playbook's 'files/' directory
+
+  tasks:
+
+    - name: Ensure required packages are installed
+      apt:
+        name:
+          - git
+          - zsh
+          - btop
+          - wget
+          - curl
+        state: latest
+        update_cache: yes
+
+    - name: Clone zsh-syntax-highlighting
+      git:
+        repo: https://github.com/zsh-users/zsh-syntax-highlighting.git
+        dest: /usr/share/zsh-syntax-highlighting
+
+    - name: Clone zsh-autosuggestions
+      git:
+        repo: https://github.com/zsh-users/zsh-autosuggestions.git
+        dest: /usr/share/zsh-autosuggestions
+
+    - name: Get list of local users (UID ≥ 1000 and valid shell)
+      command: >
+        awk -F: '$3 >= 1000 && $7 ~ /(bash|zsh|sh)$/ { print $1 }' /etc/passwd
+      register: local_users_raw
+      changed_when: false
+
+    - name: Set fact for user list
+      set_fact:
+        local_users: "{{ local_users_raw.stdout_lines }}"
+
+    - name: Configure zsh for each user
+      block:
+
+        - name: Deploy .zshrc config
+          copy:
+            src: "{{ zshrc_path }}"
+            dest: "/home/{{ item }}/.zshrc"
+            owner: "{{ item }}"
+            group: "{{ item }}"
+            mode: '0644'
+          loop: "{{ local_users }}"
+          loop_control:
+            label: "{{ item }}"
+
+        - name: Set zsh as default shell
+          user:
+            name: "{{ item }}"
+            shell: /usr/bin/zsh
+          loop: "{{ local_users }}"
