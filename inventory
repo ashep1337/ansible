@@ -9,3 +9,6 @@
 
 [Debian_Workstations]
 192.168.1.14
+
+[local]
+localhost ansible_connection=local
