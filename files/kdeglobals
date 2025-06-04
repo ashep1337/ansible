@@ -103,11 +103,11 @@ smallestReadableFont=CaskaydiaMono Nerd Font,8,-1,5,50,0,0,0,0,0
 toolBarFont=CaskaydiaMono Nerd Font,10,-1,5,50,0,0,0,0,0
 
 [Icons]
-Theme=dracula-icons-main
+Theme=breeze-dark
 
 [KDE]
 AnimationDurationFactor=0
-LookAndFeelPackage=Dracula-purple
+LookAndFeelPackage=org.kde.breezedark.desktop
 widgetStyle=Breeze
 
 [KFileDialog Settings]
