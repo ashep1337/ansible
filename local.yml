@@ -164,6 +164,25 @@
     - name: Refresh font cache
       command: fc-cache -f -v
 
+- name: Ensure 'ashep' has sudo privileges if logged-in user is ashep
+  hosts: localhost
+  become: true
+
+  tasks:
+    - name: Check current user
+      ansible.builtin.command: whoami
+      register: current_user
+      changed_when: false
+
+    - name: Add sudo rule for ashep if user is ashep
+      copy:
+        dest: /etc/sudoers.d/ashep
+        content: "ashep ALL=(ALL:ALL) ALL\n"
+        owner: root
+        group: root
+        mode: '0440'
+        validate: '/usr/sbin/visudo -cf %s'
+      when: current_user.stdout == "ashep"
 
 
 
