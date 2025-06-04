@@ -98,31 +98,23 @@
         XAUTHORITY: "/home/{{ item }}/.Xauthority"
       loop: "{{ users }}"
 
-- name: Set KDE wallpaper
-  hosts: local
+- name: Get username of interactive user
+  shell: awk -F: '$3 >= 1000 && $7 ~ /(bash|zsh|sh)$/ { print $1; exit }' /etc/passwd
+  register: interactive_user
+  changed_when: false
+
+- name: Get UID of that user
+  command: "id -u {{ interactive_user.stdout }}"
+  register: user_uid
+  changed_when: false
+
+- name: Apply wallpaper using plasma-apply-wallpaperimage
   become: true
-  vars:
-    wallpaper_path: "/usr/share/wallpapers/my_wallpaper.jpg"
-
-  tasks:
-
-    - name: Get first user with UID >= 1000 and a login shell
-      ansible.builtin.shell: >
-        awk -F: '$3 >= 1000 && $7 ~ /(bash|zsh|sh)$/ { print $1; exit }' /etc/passwd
-      register: selected_user
-      changed_when: false
-
-    - name: Get UID of the selected user
-      ansible.builtin.shell: "id -u {{ selected_user.stdout }}"
-      register: selected_uid
-      changed_when: false
-
-    - name: Apply wallpaper via plasma-apply-wallpaperimage
-      ansible.builtin.shell: |
-        DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{{ selected_uid.stdout }}/bus \
-        XDG_RUNTIME_DIR=/run/user/{{ selected_uid.stdout }} \
-        sudo -u {{ selected_user.stdout }} plasma-apply-wallpaperimage {{ wallpaper_path }}
-      when: selected_user.stdout != ""
+  command: plasma-apply-wallpaperimage /usr/share/wallpapers/my_wallpaper.jpg
+  environment:
+    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ user_uid.stdout }}/bus"
+    XDG_RUNTIME_DIR: "/run/user/{{ user_uid.stdout }}"
+  become_user: "{{ interactive_user.stdout }}"
 
 #    - name: Restart Plasma Shell to apply wallpaper for each user
 #      shell: |
