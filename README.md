@@ -7,9 +7,11 @@ I am also learning git.
 ____________________________________________
 
 
-all these .yml files are tutorial files for learning purpose and serve no real value. I will eventually move these files over to a seperate folder.
+local.yml is a Debian 12/13 configuration play that configures the theming, keybinds, and terminal to my current setup.
 
-zsh.yml on the other hand is a working playbook that will auto configure zsh shell with auto suggestion and syntax highlighting. It will also add fzf configuration to the zsh shell plus a few other required packages.
+bootstrap.yml is to configure a new system to my ansible server.
+
+most other files are for testing/learning and under development.
 
 
 
