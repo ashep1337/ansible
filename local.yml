@@ -254,7 +254,7 @@
       loop: "{{ local_users }}"
       ignore_errors: true
 
-- name: Install Dracula KDE Theme from GitHub
+- name: Install Dracula KDE Theme from GitHub (Ansible Pull)
   hosts: localhost
   become: true
   vars:
@@ -281,11 +281,12 @@
 
     - name: Copy global theme to system directory
       copy:
-        src: "{{ repo_dest }}/look-and-feel/{{ theme_name }}"
-        dest: "{{ theme_dest }}/{{ theme_name }}"
+        src: "{{ repo_dest }}/{{ theme_name }}"
+        dest: "{{ theme_dest }}/Dracula-kde"
         owner: root
         group: root
         mode: '0755'
+        remote_src: yes
       notify: update cache
 
     - name: Copy aurorae window decoration to system directory
@@ -295,6 +296,7 @@
         owner: root
         group: root
         mode: '0755'
+        remote_src: yes
 
     - name: Copy color scheme to system directory
       copy:
@@ -303,6 +305,7 @@
         owner: root
         group: root
         mode: '0644'
+        remote_src: yes
 
   handlers:
     - name: update cache
