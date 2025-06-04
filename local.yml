@@ -301,7 +301,7 @@
     - name: Copy color scheme to system directory
       copy:
         src: "{{ repo_dest }}/color-schemes/Dracula-kde.colors"
-        dest: "{{ color_scheme_dest }}/Dracula-kde.colors"
+        dest: "{{ color_scheme_dest }}"
         owner: root
         group: root
         mode: '0644'
