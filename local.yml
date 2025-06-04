@@ -254,200 +254,56 @@
       loop: "{{ local_users }}"
       ignore_errors: true
 
-- name: Install Dracula KDE themes (global, icons, cursors, window decorations, plasma styles)
-  hosts: local
+- name: Install Dracula KDE Theme from GitHub
+  hosts: localhost
   become: true
   vars:
-    global_theme_name: "Dracula-purple"
-    icon_theme_name: "dracula-icons-main"
-    cursor_theme_name: "Dracula-cursors"
-    window_deco_name: "Dracula-kde-solid"
-    plasma_style_name: "Dracula-Solid"
+    repo_url: "https://github.com/igorpadua/Dracula-kde.git"
+    repo_dest: "/tmp/Dracula-kde"
+    theme_name: "plasma/desktoptheme/Dracula-kde"
+    theme_dest: "/usr/share/plasma/look-and-feel"
+    deco_name: "Dracula-kde-solid"
+    deco_dest: "/usr/share/aurorae/themes"
+    color_scheme_dest: "/usr/share/color-schemes"
 
   tasks:
-    - name: Ensure KDE theme directories exist
-      file:
-        path: "{{ item }}"
-        state: directory
-        mode: '0755'
-      loop:
-        - "/usr/share/plasma/look-and-feel"
-        - "/usr/share/icons"
-        - "/usr/share/icons/default"
-        - "/usr/share/icons/breeze_cursors"
-        - "/usr/share/plasma/desktoptheme"
-        - "/usr/share/aurorae/themes"
-        - "/usr/share/color-schemes"
-        - "/usr/share/kwin"
-        - "/usr/share/kwin/decoration"
+    - name: Ensure required packages are installed
+      apt:
+        name: git
+        state: present
+        update_cache: true
 
-    - name: Copy Dracula global theme
+    - name: Clone Dracula KDE theme repo
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dest }}"
+        force: true
+
+    - name: Copy global theme to system directory
       copy:
-        src: "Dracula-purple/"
-        dest: "/usr/share/plasma/look-and-feel/Dracula-purple/"
+        src: "{{ repo_dest }}/look-and-feel/{{ theme_name }}"
+        dest: "{{ theme_dest }}/{{ theme_name }}"
+        owner: root
+        group: root
+        mode: '0755'
+      notify: update cache
+
+    - name: Copy aurorae window decoration to system directory
+      copy:
+        src: "{{ repo_dest }}/aurorae/{{ deco_name }}"
+        dest: "{{ deco_dest }}/{{ deco_name }}"
         owner: root
         group: root
         mode: '0755'
 
-    - name: Copy Dracula icons
+    - name: Copy color scheme to system directory
       copy:
-        src: "dracula-icons-main/"
-        dest: "/usr/share/icons/dracula-icons-main/"
-        owner: root
-        group: root
-        mode: '0755'
-
-    - name: Copy Dracula cursors
-      copy:
-        src: "Dracula-cursors/"
-        dest: "/usr/share/icons/Dracula-cursors/"
-        owner: root
-        group: root
-        mode: '0755'
-
-    - name: Copy Dracula color scheme
-      copy:
-        src: "Dracula-kde.colors"
-        dest: "/usr/share/color-schemes/"
+        src: "{{ repo_dest }}/color-schemes/Dracula-kde.colors"
+        dest: "{{ color_scheme_dest }}/Dracula-kde.colors"
         owner: root
         group: root
         mode: '0644'
 
-    - name: Copy Dracula Plasma Style (Dracula-Solid)
-      copy:
-        src: "Dracula-Solid/"
-        dest: "/usr/share/plasma/desktoptheme/Dracula-Solid/"
-        owner: root
-        group: root
-        mode: '0755'
-
-    - name: Copy Dracula window decoration theme
-      copy:
-        src: "Dracula-kde-solid/"
-        dest: "/usr/share/aurorae/themes/Dracula-kde-solid/"
-        owner: root
-        group: root
-        mode: '0755'
-
-- name: Apply KDE theme settings for each user, including Plasma Style and Window Decoration
-  hosts: local
-  become: true
-  vars:
-    global_theme: "Dracula-purple"
-    icon_theme: "dracula-icons-main"
-    cursor_theme: "Dracula-cursors"
-    plasma_style: "Dracula-Solid"
-    window_deco: "Dracula-kde-solid"
-
-  tasks:
-    - name: Get list of local users
-      command: >
-        awk -F: '$3 >= 1000 && $7 ~ /(bash|zsh|sh)$/ { print $1 }' /etc/passwd
-      register: local_users_raw
-      changed_when: false
-
-    - name: Set fact for users
-      set_fact:
-        users: "{{ local_users_raw.stdout_lines }}"
-
-    - name: Ensure .config directory exists
-      file:
-        path: "/home/{{ item }}/.config"
-        state: directory
-        owner: "{{ item }}"
-        group: "{{ item }}"
-        mode: '0755'
-      loop: "{{ users }}"
-      loop_control:
-        label: "{{ item }}"
-
-    - name: Set LookAndFeel to Dracula
-      lineinfile:
-        path: "/home/{{ item }}/.config/kdeglobals"
-        regexp: '^LookAndFeelPackage='
-        line: "LookAndFeelPackage={{ global_theme }}"
-        create: yes
-        owner: "{{ item }}"
-        group: "{{ item }}"
-        mode: '0644'
-      loop: "{{ users }}"
-      loop_control:
-        label: "{{ item }}"
-
-    - name: Set IconTheme to Dracula
-      lineinfile:
-        path: "/home/{{ item }}/.config/kdeglobals"
-        regexp: '^IconTheme='
-        line: "IconTheme={{ icon_theme }}"
-        create: yes
-        owner: "{{ item }}"
-        group: "{{ item }}"
-        mode: '0644'
-      loop: "{{ users }}"
-      loop_control:
-        label: "{{ item }}"
-
-    - name: Set CursorTheme to Dracula
-      lineinfile:
-        path: "/home/{{ item }}/.config/kcminputrc"
-        regexp: '^cursorTheme='
-        line: "cursorTheme={{ cursor_theme }}"
-        create: yes
-        owner: "{{ item }}"
-        group: "{{ item }}"
-        mode: '0644'
-      loop: "{{ users }}"
-      loop_control:
-        label: "{{ item }}"
-
-    - name: Set ColorScheme to Dracula
-      lineinfile:
-        path: "/home/{{ item }}/.config/kdeglobals"
-        regexp: '^ColorScheme='
-        line: "ColorScheme=Dracula"
-        create: yes
-        owner: "{{ item }}"
-        group: "{{ item }}"
-        mode: '0644'
-      loop: "{{ users }}"
-      loop_control:
-        label: "{{ item }}"
-
-    - name: Set Plasma Style (widgetStyle)
-      lineinfile:
-        path: "/home/{{ item }}/.config/kdeglobals"
-        regexp: '^widgetStyle='
-        line: "widgetStyle={{ plasma_style }}"
-        create: yes
-        owner: "{{ item }}"
-        group: "{{ item }}"
-        mode: '0644'
-      loop: "{{ users }}"
-      loop_control:
-        label: "{{ item }}"
-
-    - name: Set Plasma Theme in plasmarc
-      lineinfile:
-        path: "/home/{{ item }}/.config/plasmarc"
-        regexp: '^Theme='
-        line: "Theme={{ plasma_style }}"
-        create: yes
-        owner: "{{ item }}"
-        group: "{{ item }}"
-        mode: '0644'
-      loop: "{{ users }}"
-      loop_control:
-        label: "{{ item }}"
-
-    - name: Set Aurorae Window Decoration in kwinrc
-      lineinfile:
-        path: "/home/{{ item }}/.config/kwinrc"
-        regexp: '^theme='
-        line: "theme={{ window_deco }}"
-        create: yes
-        owner: "{{ item }}"
-        group: "{{ item }}"
-        mode: '0644'
-      loop: "{{ users }}"
-      loop_control:
-        label: "{{ item }}"
+  handlers:
+    - name: update cache
+      command: kbuildsycoca5
