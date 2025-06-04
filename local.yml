@@ -123,14 +123,15 @@
         dest: "{{ wallpaper_path }}"
         mode: '0644'
 
-    - name: Modify Plasma config to set wallpaper for each user
-      lineinfile:
-        path: "/home/{{ item }}/.config/plasma-org.kde.plasma.desktop-appletsrc"
-        regexp: '^Image='
-        line: "Image=file://{{ wallpaper_path }}"
-        create: yes
-      become_user: "{{ item }}"
-      loop: "{{ local_users }}"
+- name: Set KDE Plasma wallpaper for each user
+  blockinfile:
+    path: "/home/{{ item }}/.config/plasma-org.kde.plasma.desktop-appletsrc"
+    marker: "# {mark} Ansible managed wallpaper block"
+    block: |
+      [Containments][1][Wallpaper][org.kde.image][General]
+      Image=file://{{ wallpaper_path }}
+  become_user: "{{ item }}"
+  loop: "{{ local_users }}"
 
 #    - name: Restart Plasma Shell to apply wallpaper for each user
 #      shell: |
@@ -142,54 +143,8 @@
 #        XAUTHORITY: "/home/{{ item }}/.Xauthority"
 #      loop: "{{ local_users }}"
 
-- name: Install CaskaydiaMono Nerd Font system-wide
-  hosts: local
-  become: true
 
-  vars:
-    nerd_font_url: "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/CascadiaCode.zip"
-    font_temp_dir: "/tmp/nerd-fonts"
-    font_dest_dir: "/usr/share/fonts/truetype/caskaydia"
-
-  tasks:
-
-    - name: Ensure font destination directory exists
-      file:
-        path: "{{ font_dest_dir }}"
-        state: directory
-        mode: '0755'
-
-    - name: Create temporary font download directory
-      file:
-        path: "{{ font_temp_dir }}"
-        state: directory
-        mode: '0755'
-
-    - name: Download CaskaydiaMono Nerd Font zip
-      get_url:
-        url: "{{ nerd_font_url }}"
-        dest: "{{ font_temp_dir }}/CaskaydiaCove.zip"
-        mode: '0644'
-
-    - name: Unzip font archive
-      unarchive:
-        src: "{{ font_temp_dir }}/CaskaydiaCove.zip"
-        dest: "{{ font_dest_dir }}"
-        remote_src: yes
-        creates: "{{ font_dest_dir }}/CaskaydiaCove Nerd Font Complete Mono.ttf"
-
-    - name: Set correct permissions on font files
-      file:
-        path: "{{ font_dest_dir }}"
-        recurse: yes
-        owner: root
-        group: root
-        mode: '0644'
-
-    - name: Refresh font cache
-      command: fc-cache -f -v
-
-- name: Configure KDE font and keybindings per user
+- name: Configure keybindings per user
   hosts: local
   become: true
   vars:
@@ -217,18 +172,6 @@
         mode: '0755'
       loop: "{{ local_users }}"
 
-    - name: Set KDE font for each user
-      lineinfile:
-        path: "/home/{{ item }}/.config/kdeglobals"
-        create: yes
-        regexp: '^font='
-        line: "font={{ font_family }},{{ font_size }},-1,5,50,0,0,0,0,0"
-        owner: "{{ item }}"
-        group: "{{ item }}"
-        mode: '0644'
-      loop: "{{ local_users }}"
-      become_user: "{{ item }}"
-
     - name: Deploy KDE global shortcuts for each user
       copy:
         src: "{{ shortcut_file }}"
@@ -254,59 +197,99 @@
       loop: "{{ local_users }}"
       ignore_errors: true
 
-- name: Install Dracula KDE Theme from GitHub (Ansible Pull)
+- name: Install CascadiaMono Nerd Font and Apply Breeze Dark Theme
   hosts: localhost
   become: true
   vars:
-    repo_url: "https://github.com/igorpadua/Dracula-kde.git"
-    repo_dest: "/tmp/Dracula-kde"
-    theme_name: "plasma/desktoptheme/Dracula-kde"
-    theme_dest: "/usr/share/plasma/look-and-feel"
-    deco_name: "Dracula-kde-solid"
-    deco_dest: "/usr/share/aurorae/themes"
-    color_scheme_dest: "/usr/share/color-schemes"
+    font_url: "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/CascadiaMono.zip"
+    font_dest_dir: "/usr/local/share/fonts/cascadiamono"
+    font_temp_zip: "/tmp/CascadiaMono.zip"
+    kde_user_config_dir: "/home/{{ ansible_user_id }}/.config"
 
   tasks:
-    - name: Ensure required packages are installed
+    - name: Ensure unzip and fonts directory exist
       apt:
-        name: git
+        name: unzip
         state: present
         update_cache: true
 
-    - name: Clone Dracula KDE theme repo
-      git:
-        repo: "{{ repo_url }}"
-        dest: "{{ repo_dest }}"
-        force: true
-
-    - name: Copy global theme to system directory
-      copy:
-        src: "{{ repo_dest }}/{{ theme_name }}"
-        dest: "{{ theme_dest }}/Dracula-kde"
-        owner: root
-        group: root
+    - name: Create destination font directory
+      file:
+        path: "{{ font_dest_dir }}"
+        state: directory
         mode: '0755'
-        remote_src: yes
-      notify: update cache
 
-    - name: Copy aurorae window decoration to system directory
-      copy:
-        src: "{{ repo_dest }}/aurorae/themes/{{ deco_name }}"
-        dest: "{{ deco_dest }}/{{ deco_name }}"
-        owner: root
-        group: root
-        mode: '0755'
+    - name: Download CascadiaMono Nerd Font
+      get_url:
+        url: "{{ font_url }}"
+        dest: "{{ font_temp_zip }}"
+
+    - name: Unzip CascadiaMono Nerd Font
+      unarchive:
+        src: "{{ font_temp_zip }}"
+        dest: "{{ font_dest_dir }}"
         remote_src: yes
 
-    - name: Copy color scheme to system directory
-      copy:
-        src: "{{ repo_dest }}/color-schemes/Dracula-kde.colors"
-        dest: "{{ color_scheme_dest }}"
-        owner: root
-        group: root
+    - name: Refresh font cache
+      command: fc-cache -f -v
+
+    - name: Ensure KDE config directory exists
+      file:
+        path: "{{ kde_user_config_dir }}"
+        state: directory
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_id }}"
+        mode: '0755'
+
+    - name: Set KDE font settings (10pt Cascadia Mono Nerd Font)
+      ini_file:
+        path: "{{ kde_user_config_dir }}/kdeglobals"
+        section: General
+        option: fixed
+        value: "CaskaydiaCove Nerd Font Mono,10,-1,5,50,0,0,0,0,0"
         mode: '0644'
-        remote_src: yes
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_id }}"
+        create: yes
 
-  handlers:
-    - name: update cache
-      command: kbuildsycoca5
+    - name: Apply Breeze Dark theme
+      ini_file:
+        path: "{{ kde_user_config_dir }}/kdeglobals"
+        section: General
+        option: ColorScheme
+        value: "BreezeDark"
+        mode: '0644'
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_id }}"
+
+    - name: Set IconTheme to Breeze Dark
+      ini_file:
+        path: "{{ kde_user_config_dir }}/kdeglobals"
+        section: Icons
+        option: Theme
+        value: "breeze-dark"
+        mode: '0644'
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_id }}"
+
+    - name: Set CursorTheme to Breeze
+      ini_file:
+        path: "{{ kde_user_config_dir }}/kcminputrc"
+        section: Mouse
+        option: cursorTheme
+        value: "Breeze"
+        mode: '0644'
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_id }}"
+
+    - name: Set LookAndFeel to BreezeDark
+      ini_file:
+        path: "{{ kde_user_config_dir }}/kdeglobals"
+        section: KDE
+        option: LookAndFeelPackage
+        value: "org.kde.breezedark.desktop"
+        mode: '0644'
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_id }}"
+
+
