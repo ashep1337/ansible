@@ -98,40 +98,31 @@
         XAUTHORITY: "/home/{{ item }}/.Xauthority"
       loop: "{{ users }}"
 
-- name: Set KDE Plasma wallpaper for all users
+- name: Set KDE wallpaper
   hosts: local
   become: true
-
   vars:
     wallpaper_path: "/usr/share/wallpapers/my_wallpaper.jpg"
 
   tasks:
 
-    - name: Get list of users with home directories
-      command: >
-        awk -F: '$3 >= 1000 && $7 ~ /(bash|zsh|sh)$/ { print $1 }' /etc/passwd
-      register: local_users_raw
+    - name: Get first user with UID >= 1000 and a login shell
+      ansible.builtin.shell: >
+        awk -F: '$3 >= 1000 && $7 ~ /(bash|zsh|sh)$/ { print $1; exit }' /etc/passwd
+      register: selected_user
       changed_when: false
 
-    - name: Set fact with list of users
-      set_fact:
-        local_users: "{{ local_users_raw.stdout_lines }}"
+    - name: Get UID of the selected user
+      ansible.builtin.shell: "id -u {{ selected_user.stdout }}"
+      register: selected_uid
+      changed_when: false
 
-    - name: Ensure wallpaper exists on remote
-      copy:
-        src: files/wallpaper.jpg
-        dest: "{{ wallpaper_path }}"
-        mode: '0644'
-
-- name: Set KDE Plasma wallpaper for each user
-  blockinfile:
-    path: "/home/{{ item }}/.config/plasma-org.kde.plasma.desktop-appletsrc"
-    marker: "# {mark} Ansible managed wallpaper block"
-    block: |
-      [Containments][1][Wallpaper][org.kde.image][General]
-      Image=file://{{ wallpaper_path }}
-  become_user: "{{ item }}"
-  loop: "{{ local_users }}"
+    - name: Apply wallpaper via plasma-apply-wallpaperimage
+      ansible.builtin.shell: |
+        DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{{ selected_uid.stdout }}/bus \
+        XDG_RUNTIME_DIR=/run/user/{{ selected_uid.stdout }} \
+        sudo -u {{ selected_user.stdout }} plasma-apply-wallpaperimage {{ wallpaper_path }}
+      when: selected_user.stdout != ""
 
 #    - name: Restart Plasma Shell to apply wallpaper for each user
 #      shell: |
