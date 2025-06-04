@@ -291,7 +291,7 @@
 
     - name: Copy aurorae window decoration to system directory
       copy:
-        src: "{{ repo_dest }}/aurorae/{{ deco_name }}"
+        src: "{{ repo_dest }}/aurorae/themes/{{ deco_name }}"
         dest: "{{ deco_dest }}/{{ deco_name }}"
         owner: root
         group: root
