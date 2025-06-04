@@ -19,7 +19,6 @@
           - nala
         state: latest
         update_cache: yes
-        upgrade: dist
 
     - name: Clone zsh-syntax-highlighting
       git:
