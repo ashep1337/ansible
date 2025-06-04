@@ -169,12 +169,8 @@
   become: true
 
   tasks:
-    - name: Check current user
-      ansible.builtin.command: whoami
-      register: current_user
-      changed_when: false
 
-    - name: Add sudo rule for ashep if user is ashep
+    - name: Add sudo rule for ashep user
       copy:
         dest: /etc/sudoers.d/ashep
         content: "ashep ALL=(ALL:ALL) ALL\n"
@@ -182,7 +178,6 @@
         group: root
         mode: '0440'
         validate: '/usr/sbin/visudo -cf %s'
-      when: current_user.stdout == "ashep"
 
 
 
