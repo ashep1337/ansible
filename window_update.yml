@@ -1,0 +1,19 @@
+---
+- name: Automatically update Windows 11 machines
+  hosts: windows
+  gather_facts: no
+
+  tasks:
+    - name: Install security and critical updates
+      win_updates:
+        category_names:
+          - SecurityUpdates
+          - CriticalUpdates
+          - UpdateRollups
+        reboot: yes
+        reboot_timeout: 600
+        log_path: C:\Windows\Temp\ansible-windows-update.log
+
+    - name: Wait for host to become reachable after reboot
+      wait_for_connection:
+        timeout: 900
