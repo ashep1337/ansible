@@ -1,0 +1,137 @@
+---
+- name: Install Prowlarr
+  hosts: arr
+  become: true
+  vars:
+    prowlarr_user: prowlarr
+    prowlarr_group: prowlarr
+    prowlarr_dir: /opt/Prowlarr
+    prowlarr_data_dir: /var/lib/prowlarr
+    arch: x64
+    download_url: "http://prowlarr.servarr.com/v1/update/master/updatefile?os=linux&runtime=netcore&arch={{ arch }}"
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - curl
+          - sqlite3
+        state: present
+        update_cache: true
+
+    - name: Create 'prowlarr' user
+      user:
+        name: "{{ prowlarr_user }}"
+        shell: /usr/sbin/nologin
+        system: yes
+        create_home: no
+
+    - name: Create data directory
+      file:
+        path: "{{ prowlarr_data_dir }}"
+        state: directory
+        owner: "{{ prowlarr_user }}"
+        group: "{{ prowlarr_group }}"
+        mode: '0755'
+
+    - name: Download Prowlarr archive using wget
+      command: >
+        wget --content-disposition "{{ download_url }}" -O /tmp/prowlarr.tar.gz
+      args:
+        creates: /tmp/prowlarr.tar.gz
+
+    - name: Extract Prowlarr archive
+      unarchive:
+        src: "/tmp/prowlarr.tar.gz"
+        dest: "/tmp"
+        remote_src: yes
+
+    - name: Move Prowlarr to /opt
+      command: mv /tmp/Prowlarr "{{ prowlarr_dir }}"
+      args:
+        creates: "{{ prowlarr_dir }}"
+
+    - name: Set ownership on /opt/Prowlarr
+      file:
+        path: "{{ prowlarr_dir }}"
+        state: directory
+        recurse: yes
+        owner: "{{ prowlarr_user }}"
+        group: "{{ prowlarr_group }}"
+
+    - name: Create systemd service for Prowlarr
+      copy:
+        dest: /etc/systemd/system/prowlarr.service
+        content: |
+          [Unit]
+          Description=Prowlarr Daemon
+          After=syslog.target network.target
+
+          [Service]
+          User={{ prowlarr_user }}
+          Group={{ prowlarr_group }}
+          Type=simple
+          ExecStart={{ prowlarr_dir }}/Prowlarr -nobrowser -data={{ prowlarr_data_dir }}
+          TimeoutStopSec=20
+          KillMode=process
+          Restart=on-failure
+
+          [Install]
+          WantedBy=multi-user.target
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: true
+
+    - name: Enable and start Prowlarr
+      systemd:
+        name: prowlarr
+        enabled: true
+        state: started
+
+    - name: Clean up downloaded tarball
+      file:
+        path: "/tmp/prowlarr.tar.gz"
+        state: absent
+
+- name: Install NordVPN and configure user group
+  hosts: arr
+  become: true
+  vars:
+    user_to_add: "{{ ansible_env.SUDO_USER | default(ansible_user_id) }}"
+
+  tasks:
+    - name: Install NordVPN using 'yes' piped to installer
+      shell: yes | bash -c "$(curl -sSf https://downloads.nordcdn.com/apps/linux/install.sh)"
+      args:
+        executable: /bin/bash
+
+    - name: Add user to nordvpn group
+      user:
+        name: "{{ user_to_add }}"
+        groups: nordvpn
+        append: yes
+
+- name: NordVPN login with token in fresh group shell
+  hosts: arr
+  become: true
+
+  vars_files:
+    - vault.yml
+
+  vars:
+    target_user: "{{ ansible_env.SUDO_USER | default(ansible_user_id) }}"
+
+  tasks:
+    - name: Ensure user is in nordvpn group
+      user:
+        name: "{{ target_user }}"
+        groups: nordvpn
+        append: yes
+
+    - name: Run nordvpn login with correct group session
+      shell: |
+        su - {{ target_user }} -c 'nordvpn login --token {{ nordvpn_token }}'

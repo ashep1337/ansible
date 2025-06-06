@@ -3,6 +3,9 @@
   hosts: windows
   gather_facts: no
 
+  vars_files:
+    - vault.yml
+
   tasks:
     - name: Install security and critical updates
       win_updates:
