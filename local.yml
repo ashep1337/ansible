@@ -40,7 +40,7 @@
   become: true
 
   vars:
-    zshrc_path: ".zshrc"  # Path relative to playbook's files/ directory
+    zshrc_path: "zshrc"  # Path relative to playbook's files/ directory
 
   tasks:
 
