@@ -1,5 +1,38 @@
 ---
 
+- hosts: all
+  become: true
+  pre_tasks:
+
+  - name: install updates
+    apt:
+      upgrade: dist
+      update_cache: yes
+    when: ansible_distribution == "Debian"
+
+- hosts: all
+  become: true
+  tasks:
+
+  - name: Creating ashep user
+    tags: always
+    user:
+      name: ashep
+      groups: sudo
+
+  - name: adding ssh key for ashep
+    tags: always
+    authorized_key:
+      user: ashep
+      key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDYMXF2WqNoEUByTUKkU5CAtKiKX>
+
+  - name: adding ashep to sudoers
+    copy:
+      src: sudoer_ashep
+      dest: /etc/sudoers.d/ashep
+      owner: root
+      group: root
+      mode: 0440
 
 - name: Install zsh and configure for all users
   hosts: local
