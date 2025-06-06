@@ -147,6 +147,14 @@
       register: user_uid
       changed_when: false
 
+    - name: Copy wallpaper to /usr/share/wallpapers
+      copy:
+        src: wallpaper.jpg
+        dest: /usr/share/wallpapers/wallpaper.jpg
+        owner: root
+        group: root
+        mode: '0644'
+
     - name: Apply wallpaper using plasma-apply-wallpaperimage
       become: true
       command: plasma-apply-wallpaperimage /usr/share/wallpapers/wallpaper.jpg
