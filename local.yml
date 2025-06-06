@@ -1,6 +1,6 @@
 ---
 
-- hosts: all
+- hosts: local
   become: true
   pre_tasks:
 
@@ -10,7 +10,7 @@
       update_cache: yes
     when: ansible_distribution == "Debian"
 
-- hosts: all
+- hosts: local
   become: true
   tasks:
 
@@ -34,8 +34,9 @@
       group: root
       mode: 0440
 
-- name: Install zsh and configure for all users
-  hosts: local
+- name: installing dependencies
+
+- hosts: local
   become: true
   vars:
     zshrc_path: "zshrc"
