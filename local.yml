@@ -1,7 +1,5 @@
 ---
 
----
-
 - hosts: local
   become: true
   pre_tasks:
