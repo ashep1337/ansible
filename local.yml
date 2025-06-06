@@ -158,7 +158,7 @@
 
     - name: Apply wallpaper using plasma-apply-wallpaperimage
       become: true
-      command: plasma-apply-wallpaperimage /usr/share/wallpapers/my_wallpaper.jpg
+      command: plasma-apply-wallpaperimage /usr/share/wallpapers/wallpaper.jpg
       environment:
         DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ user_uid.stdout }}/bus"
         XDG_RUNTIME_DIR: "/run/user/{{ user_uid.stdout }}"
