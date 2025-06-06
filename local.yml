@@ -1,47 +1,40 @@
 ---
-
-- hosts: local
+- name: Setup local system
+  hosts: local
   become: true
-  pre_tasks:
 
-  - name: install updates
-    apt:
-      upgrade: dist
-      update_cache: yes
-    when: ansible_distribution == "Debian"
-
-- hosts: local
-  become: true
-  tasks:
-
-  - name: Creating ashep user
-    tags: always
-    user:
-      name: ashep
-      groups: sudo
-
-  - name: adding ssh key for ashep
-    tags: always
-    authorized_key:
-      user: ashep
-      key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDYMXF2WqNoEUByTUKkU5CAtKiKX>
-
-  - name: adding ashep to sudoers
-    copy:
-      src: sudoer_ashep
-      dest: /etc/sudoers.d/ashep
-      owner: root
-      group: root
-      mode: 0440
-
-- name: installing dependencies
-
-- hosts: local
-  become: true
   vars:
     zshrc_path: "zshrc"
+
+  pre_tasks:
+    - name: Install updates (Debian only)
+      apt:
+        upgrade: dist
+        update_cache: yes
+      when: ansible_distribution == "Debian"
+
   tasks:
-    - name: Git, zsh, btop, wget, curl, nala installed
+    - name: Create 'ashep' user
+      tags: always
+      user:
+        name: ashep
+        groups: sudo
+
+    - name: Add SSH key for 'ashep'
+      tags: always
+      authorized_key:
+        user: ashep
+        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDYMXF2WqNoEUByTUKkU5CAtKiKX..."  # Complete your key here
+
+    - name: Add 'ashep' to sudoers
+      copy:
+        src: sudoer_ashep
+        dest: /etc/sudoers.d/ashep
+        owner: root
+        group: root
+        mode: '0440'
+
+    - name: Install packages (git, zsh, btop, wget, curl, nala)
       apt:
         name:
           - git
