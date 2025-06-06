@@ -37,12 +37,9 @@
 - name: Install zsh and configure for all users
   hosts: local
   become: true
-
   vars:
     zshrc_path: "zshrc"
-
   tasks:
-
     - name: Git, zsh, btop, wget, curl, nala installed
       apt:
         name:
