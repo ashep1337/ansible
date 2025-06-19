@@ -29,3 +29,5 @@ ansible_become_method=runas
 [arr]
 192.168.1.17
 
+[debian_servers]
+192.168.1.36

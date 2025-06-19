@@ -1,6 +1,6 @@
 ---
 
-- hosts: all
+- hosts: debian_servers
   become: true
   pre_tasks:
 
@@ -10,26 +10,26 @@
       update_cache: yes
     when: ansible_distribution == "Debian"
 
-- hosts: all
+- hosts: debian_servers
   become: true
   tasks:
 
-  - name: Creating ashep user
+  - name: Creating ansi user
     tags: always
     user:
-      name: ashep
+      name: ansi
       groups: sudo
 
-  - name: adding ssh key for ashep
+  - name: adding ssh key for ansi
     tags: always
     authorized_key:
-      user: ashep
+      user: ansi
       key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDYMXF2WqNoEUByTUKkU5CAtKiKXfvb5yc5mIbGY9T/Q Trixie Key"
 
-  - name: adding ashep to sudoers
+  - name: adding ansi to sudoers
     copy:
-      src: sudoer_ashep
-      dest: /etc/sudoers.d/ashep
+      src: sudoer_ansi
+      dest: /etc/sudoers.d/ansi
       owner: root
       group: root
       mode: 0440
